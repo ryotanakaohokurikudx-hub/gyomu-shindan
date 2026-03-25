@@ -1,0 +1,1673 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- CHANGE: タイトルを「診断」→「傾向分析」に変更 -->
+<title>業務構造 傾向分析 | 属人化リスク可視化</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+/* ==============================================
+   デザイントークン — Notion風ライトテーマ（維持）
+=============================================== */
+:root {
+  --bg:          #FFFFFF;
+  --bg-2:        #F7F6F3;
+  --bg-3:        #EFEEEB;
+  --border:      #E3E2DE;
+  --border-2:    #CFCEC9;
+  --text:        #1A1A1A;
+  --text-2:      #4A4A4A;
+  --text-3:      #8B8B8B;
+  --text-4:      #BABAB5;
+  --safe:        #2ECC71;
+  --safe-bg:     #F0FBF4;
+  --warn:        #E89320;
+  --warn-bg:     #FDF8EE;
+  --danger:      #EB5757;
+  --danger-bg:   #FEF2F2;
+  --font-serif:  'Noto Serif JP', 'Georgia', serif;
+  --font-sans:   'DM Sans', 'Noto Sans JP', sans-serif;
+  --font-body:   'Noto Sans JP', 'DM Sans', sans-serif;
+  --radius-sm:   6px;
+  --radius:      10px;
+  --radius-lg:   14px;
+  --shadow-sm:   0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow:      0 4px 16px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.04);
+  --t: 0.22s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.75;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+section { padding: 80px 0; }
+
+.eyebrow {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 14px;
+}
+
+.heading-lg {
+  font-family: var(--font-serif);
+  font-size: clamp(20px, 3.5vw, 30px);
+  font-weight: 300;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+/* ① ファーストビュー */
+#hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+#hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 48px 48px;
+  opacity: 0.4;
+  pointer-events: none;
+}
+.hero-inner { position: relative; z-index: 1; padding: 60px 0 80px; }
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 13px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  font-size: 11px;
+  font-family: var(--font-sans);
+  color: var(--text-3);
+  letter-spacing: 0.06em;
+  margin-bottom: 36px;
+}
+.badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--danger); animation: blink 2s infinite; }
+@keyframes blink { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.4; transform:scale(1.2); } }
+.hero-title {
+  font-family: var(--font-serif);
+  font-size: clamp(28px, 5.5vw, 46px);
+  font-weight: 300;
+  line-height: 1.5;
+  letter-spacing: -0.015em;
+  color: var(--text);
+  margin-bottom: 28px;
+}
+.hero-title u { text-decoration: none; border-bottom: 1.5px solid var(--danger); padding-bottom: 1px; }
+.hero-sub {
+  font-size: 15px;
+  color: var(--text-2);
+  line-height: 1.9;
+  max-width: 460px;
+  margin-bottom: 44px;
+  font-weight: 300;
+}
+.btn-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--text);
+  color: var(--bg);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  padding: 13px 28px;
+  border-radius: var(--radius);
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: var(--t);
+  box-shadow: var(--shadow-sm);
+}
+.btn-cta:hover { background: #2A2A2A; transform: translateY(-1px); box-shadow: var(--shadow); }
+.btn-cta .arr { transition: transform var(--t); }
+.btn-cta:hover .arr { transform: translateX(4px); }
+.stats-row { display: flex; gap: 0; margin-top: 64px; border-top: 1px solid var(--border); padding-top: 36px; }
+.stat-item { flex: 1; padding-right: 24px; margin-right: 24px; border-right: 1px solid var(--border); }
+.stat-item:last-child { border-right: none; margin-right: 0; padding-right: 0; }
+.stat-num { font-family: var(--font-serif); font-size: 28px; font-weight: 300; color: var(--text); display: block; line-height: 1.2; margin-bottom: 6px; letter-spacing: -0.02em; }
+.stat-desc { font-size: 11px; color: var(--text-3); line-height: 1.5; font-family: var(--font-sans); }
+
+/* ② 診断フォーム */
+#diagnosis { background: var(--bg-2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.prog-wrap { margin-bottom: 48px; }
+.prog-nodes { display: flex; align-items: center; }
+.p-node {
+  display: flex; align-items: center; gap: 7px;
+  font-family: var(--font-sans); font-size: 11px; font-weight: 500;
+  color: var(--text-4); letter-spacing: 0.04em; transition: color var(--t);
+}
+.p-node.active { color: var(--text); }
+.p-node.done   { color: var(--text-3); }
+.p-node .dot {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 1.5px solid var(--border-2); display: flex;
+  align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 600;
+  background: var(--bg); transition: all var(--t); flex-shrink: 0;
+}
+.p-node.active .dot { border-color: var(--text); background: var(--text); color: var(--bg); }
+.p-node.done .dot   { background: var(--bg-3); color: var(--text-3); }
+.p-node.done .dot::before { content: '✓'; font-size: 9px; }
+.p-node.done .lbl { display: none; }
+.p-line { flex: 1; height: 1px; background: var(--border); margin: 0 8px; }
+.prog-bar-bg { height: 2px; background: var(--border); border-radius: 1px; margin-top: 18px; overflow: hidden; }
+.prog-bar { height: 100%; background: var(--text); border-radius: 1px; transition: width 0.5s cubic-bezier(.4,0,.2,1); }
+
+.step-panel {
+  display: none;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 40px;
+  box-shadow: var(--shadow);
+  animation: slideUp 0.35s cubic-bezier(.4,0,.2,1);
+}
+.step-panel.active { display: block; }
+@keyframes slideUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+.step-label { font-family: var(--font-sans); font-size: 11px; font-weight: 500; letter-spacing: 0.12em; color: var(--text-4); text-transform: uppercase; margin-bottom: 10px; }
+.step-title { font-family: var(--font-serif); font-size: clamp(18px, 3vw, 23px); font-weight: 300; line-height: 1.5; color: var(--text); margin-bottom: 8px; }
+.step-desc { font-size: 13px; color: var(--text-3); line-height: 1.75; margin-bottom: 30px; padding-bottom: 26px; border-bottom: 1px solid var(--border); }
+.field { margin-bottom: 22px; }
+.field-label { display: block; font-family: var(--font-sans); font-size: 12px; font-weight: 500; color: var(--text-2); margin-bottom: 8px; letter-spacing: 0.02em; }
+.req { color: var(--danger); margin-left: 2px; }
+
+input[type="text"] {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  color: var(--text); font-family: var(--font-body); font-size: 14px;
+  padding: 11px 14px; border-radius: var(--radius-sm); outline: none;
+  transition: border-color var(--t), box-shadow var(--t); -webkit-appearance: none;
+}
+input[type="text"]:focus { border-color: var(--text-2); box-shadow: 0 0 0 3px rgba(26,26,26,0.07); }
+input::placeholder { color: var(--text-4); font-size: 13px; }
+
+.task-list { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.task-tag {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; background: var(--bg-2);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 13px; color: var(--text); font-family: var(--font-sans);
+}
+.task-del { background: none; border: none; color: var(--text-4); cursor: pointer; font-size: 16px; padding: 0 2px; line-height: 1; border-radius: 3px; transition: color var(--t); }
+.task-del:hover { color: var(--danger); }
+.btn-add-task {
+  width: 100%; background: transparent; border: 1.5px dashed var(--border-2);
+  color: var(--text-3); padding: 11px; border-radius: var(--radius-sm);
+  cursor: pointer; font-size: 13px; font-family: var(--font-sans);
+  transition: var(--t); display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 14px;
+}
+.btn-add-task:hover { border-color: var(--text-2); color: var(--text-2); background: var(--bg-2); }
+.err-msg { font-size: 11px; color: var(--danger); margin-top: 5px; display: none; font-family: var(--font-sans); }
+.err-msg.on { display: block; }
+
+.step-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 36px; padding-top: 24px; border-top: 1px solid var(--border); gap: 12px; }
+.btn-back { background: transparent; border: 1px solid var(--border-2); color: var(--text-3); padding: 10px 20px; border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; font-family: var(--font-sans); transition: var(--t); }
+.btn-back:hover { border-color: var(--text-2); color: var(--text); }
+.btn-next { display: inline-flex; align-items: center; gap: 7px; background: var(--text); color: var(--bg); border: none; padding: 11px 24px; border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; font-weight: 500; font-family: var(--font-sans); letter-spacing: 0.02em; transition: var(--t); }
+.btn-next:hover { background: #2A2A2A; transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+
+/* タスクグループ */
+.tg { margin-bottom: 36px; padding-bottom: 32px; border-bottom: 1px solid var(--border); }
+.tg:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.tg-label { font-family: var(--font-sans); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); padding: 4px 9px; background: var(--bg-2); border-radius: 4px; display: inline-block; margin-bottom: 20px; }
+
+/* ==============================================
+   CHANGE: スライダー全廃 → 選択ボタンUI
+   choice-group / choice-btn / choice-grid
+=============================================== */
+.choice-group { margin-bottom: 24px; }
+.choice-group:last-child { margin-bottom: 0; }
+
+.choice-label {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  margin-bottom: 5px;
+  letter-spacing: 0.01em;
+}
+
+.choice-hint {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-bottom: 10px;
+  line-height: 1.55;
+  font-family: var(--font-sans);
+}
+
+/* CHANGE: 2列グリッド（モバイルは1列） */
+.choice-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+@media (max-width: 460px) {
+  .choice-grid { grid-template-columns: 1fr; }
+}
+
+/* CHANGE: ボタン型選択肢 — Notion的な細い枠、選択時に反転 */
+.choice-btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 14px 16px;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color var(--t), background var(--t), color var(--t);
+  font-family: var(--font-body);
+  width: 100%;
+  min-height: 64px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.choice-btn:hover {
+  border-color: var(--border-2);
+  background: var(--bg-2);
+}
+
+/* CHANGE: 選択済みは黒背景・白文字 — 迷いなく「選んだ」状態を明示 */
+.choice-btn.selected {
+  border-color: var(--text);
+  background: var(--text);
+  color: var(--bg);
+}
+
+/* 選択済みチェックマーク */
+.choice-btn.selected::after {
+  content: '✓';
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 11px;
+  color: rgba(255,255,255,0.7);
+  font-family: var(--font-sans);
+}
+
+.choice-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.45;
+  transition: color var(--t);
+}
+.choice-btn.selected .choice-text { color: var(--bg); }
+
+.choice-sub {
+  font-size: 11px;
+  color: var(--text-3);
+  line-height: 1.4;
+  font-family: var(--font-sans);
+  transition: color var(--t);
+}
+.choice-btn.selected .choice-sub { color: rgba(255,255,255,0.6); }
+
+/* CHANGE: 選択ミス時のエラー表示 */
+.choice-group .err-msg { margin-top: 6px; }
+
+/* PDF出力ボタン */
+.btn-pdf-wrap {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 24px;
+}
+.btn-pdf {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--bg);
+  color: var(--text-2);
+  border: 1.5px solid var(--border-2);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--t);
+}
+.btn-pdf:hover {
+  border-color: var(--text-2);
+  color: var(--text);
+  background: var(--bg-2);
+}
+.btn-pdf svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  flex-shrink: 0;
+}
+.btn-pdf.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* ③ 結果ダッシュボード */
+#result { display: none; background: var(--bg); border-top: 1px solid var(--border); }
+#result.on { display: block; }
+
+.kpi-card { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 44px 40px; text-align: center; margin-bottom: 20px; transition: background 0.6s, border-color 0.6s; }
+.kpi-card.safe   { background: var(--safe-bg);   border-color: rgba(46,204,113,.25); }
+.kpi-card.warn   { background: var(--warn-bg);   border-color: rgba(232,147,32,.25); }
+.kpi-card.danger { background: var(--danger-bg); border-color: rgba(235,87,87,.25); }
+.kpi-eyebrow { font-family: var(--font-sans); font-size: 11px; font-weight: 500; letter-spacing: 0.13em; text-transform: uppercase; color: var(--text-3); margin-bottom: 16px; }
+.kpi-num { font-family: var(--font-serif); font-size: 88px; font-weight: 300; line-height: 1; margin-bottom: 4px; transition: color .5s; letter-spacing: -0.03em; }
+.kpi-num.safe   { color: var(--safe); }
+.kpi-num.warn   { color: var(--warn); }
+.kpi-num.danger { color: var(--danger); }
+.kpi-of100 { font-family: var(--font-sans); font-size: 13px; color: var(--text-3); margin-bottom: 18px; }
+.kpi-pill { display: inline-block; padding: 4px 14px; border-radius: 100px; font-family: var(--font-sans); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 22px; }
+.kpi-pill.safe   { background: rgba(46,204,113,.15); color: var(--safe); }
+.kpi-pill.warn   { background: rgba(232,147,32,.15); color: var(--warn); }
+.kpi-pill.danger { background: rgba(235,87,87,.15);  color: var(--danger); }
+.kpi-track { height: 4px; background: rgba(0,0,0,.07); border-radius: 2px; max-width: 280px; margin: 0 auto; overflow: hidden; }
+.kpi-fill { height: 100%; border-radius: 2px; transition: width 1.4s cubic-bezier(.4,0,.2,1); }
+.kpi-fill.safe   { background: var(--safe); }
+.kpi-fill.warn   { background: var(--warn); }
+.kpi-fill.danger { background: var(--danger); }
+
+.sub-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+.sub-card { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px 16px; text-align: center; }
+.sub-num { font-family: var(--font-serif); font-size: 28px; font-weight: 300; color: var(--text); display: block; line-height: 1; margin-bottom: 6px; letter-spacing: -0.02em; }
+.sub-lbl { font-family: var(--font-sans); font-size: 10px; color: var(--text-3); line-height: 1.4; }
+
+/* CHANGE: スコア根拠カード（信頼性向上） */
+.logic-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 28px;
+  margin-bottom: 16px;
+}
+.logic-card-title {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 16px;
+}
+.logic-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+.logic-row:last-child { margin-bottom: 0; }
+.logic-name { font-size: 12px; color: var(--text-2); font-family: var(--font-sans); min-width: 110px; flex-shrink: 0; }
+.logic-bar-bg { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.logic-bar-fg { height: 100%; border-radius: 2px; transition: width 1s cubic-bezier(.4,0,.2,1) .3s; }
+.logic-pct { font-family: var(--font-serif); font-size: 14px; font-weight: 300; color: var(--text-3); min-width: 34px; text-align: right; }
+
+/* CHANGE: 業界比較（信頼性向上） */
+.compare-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 28px;
+  margin-bottom: 16px;
+}
+.compare-title { font-family: var(--font-sans); font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); margin-bottom: 18px; }
+.compare-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+.compare-row:last-child { margin-bottom: 0; }
+.compare-label { font-size: 12px; color: var(--text-2); font-family: var(--font-sans); }
+.compare-val { font-family: var(--font-serif); font-size: 20px; font-weight: 300; }
+.compare-diff { font-size: 11px; font-family: var(--font-sans); padding: 2px 8px; border-radius: 4px; }
+.compare-diff.over  { background: var(--danger-bg); color: var(--danger); }
+.compare-diff.under { background: var(--safe-bg);   color: var(--safe);   }
+
+/* チャート */
+.chart-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; margin-bottom: 16px; }
+.chart-head { font-family: var(--font-sans); font-size: 11px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); margin-bottom: 20px; }
+.chart-box { position: relative; height: 190px; }
+
+/* TOP5 */
+.top5-rows { display: flex; flex-direction: column; gap: 10px; }
+.top5-row { display: flex; align-items: center; gap: 14px; padding: 13px 16px; background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-sm); transition: border-color var(--t); }
+.top5-row:hover { border-color: var(--border-2); }
+.top5-rank { font-family: var(--font-serif); font-size: 16px; font-weight: 300; color: var(--text-4); min-width: 20px; }
+.top5-rank.no1 { color: var(--danger); }
+.top5-body { flex: 1; min-width: 0; }
+.top5-name { font-size: 13px; font-family: var(--font-sans); color: var(--text); margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top5-bar-bg { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.top5-bar-fg { height: 100%; border-radius: 2px; transition: width 1s cubic-bezier(.4,0,.2,1) .15s; }
+.top5-score { font-family: var(--font-serif); font-size: 18px; font-weight: 300; min-width: 32px; text-align: right; }
+
+/* ④ ナラティブ */
+#narrative { display: none; background: var(--bg-2); border-top: 1px solid var(--border); }
+#narrative.on { display: block; }
+.narr-note { background: var(--bg); border: 1px solid var(--border); border-left: 3px solid var(--text-3); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 22px 24px; margin-bottom: 14px; }
+.narr-note.hi { border-left-color: var(--danger); }
+.narr-note.md { border-left-color: var(--warn); }
+.narr-note p { font-size: 14px; font-weight: 300; line-height: 2; color: var(--text-2); }
+.narr-note p strong { color: var(--text); font-weight: 500; }
+
+/* CHANGE: 放置リスクカード（新設・心理誘導） */
+.risk-block {
+  background: var(--danger-bg);
+  border: 1px solid rgba(235,87,87,.2);
+  border-radius: var(--radius);
+  padding: 28px;
+  margin-top: 20px;
+}
+.risk-block.warn { background: var(--warn-bg); border-color: rgba(232,147,32,.2); }
+.risk-title { font-family: var(--font-serif); font-size: 16px; font-weight: 400; color: var(--text); margin-bottom: 14px; line-height: 1.6; }
+.risk-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.risk-item { display: flex; gap: 10px; font-size: 13px; color: var(--text-2); line-height: 1.65; font-weight: 300; }
+.risk-dot { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; border-radius: 50%; background: rgba(235,87,87,.12); display: flex; align-items: center; justify-content: center; font-size: 8px; color: var(--danger); }
+.risk-block.warn .risk-dot { background: rgba(232,147,32,.12); color: var(--warn); }
+
+/* ⑤ 限界認識 */
+#limit { display: none; background: var(--bg); border-top: 1px solid var(--border); }
+#limit.on { display: block; }
+.limit-box { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 48px 40px; text-align: center; }
+.limit-title { font-family: var(--font-serif); font-size: clamp(20px, 3.5vw, 28px); font-weight: 300; line-height: 1.6; color: var(--text); margin-bottom: 32px; }
+.limit-list { display: flex; flex-direction: column; gap: 14px; text-align: left; max-width: 400px; margin: 0 auto 36px; }
+.limit-item { display: flex; align-items: flex-start; gap: 12px; font-size: 13px; font-weight: 300; color: var(--text-2); line-height: 1.65; }
+.limit-icon { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--border-2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.limit-icon svg { width: 8px; height: 8px; stroke: var(--text-3); fill: none; stroke-width: 2; }
+.limit-statement { font-family: var(--font-serif); font-size: 16px; font-weight: 300; line-height: 2; color: var(--text-2); }
+.limit-statement strong { color: var(--text); font-weight: 400; }
+
+/* ==============================================
+   CHANGE: CTA — 心理誘導 + Google Form導線
+=============================================== */
+#cta { display: none; background: var(--bg-2); border-top: 1px solid var(--border); }
+#cta.on { display: block; }
+.cta-head { text-align: center; margin-bottom: 40px; }
+.cta-title { font-family: var(--font-serif); font-size: clamp(20px, 3.5vw, 28px); font-weight: 300; line-height: 1.65; color: var(--text); margin-bottom: 16px; }
+.cta-desc { font-size: 14px; font-weight: 300; color: var(--text-3); line-height: 1.95; }
+
+/* CHANGE: 状態警告バナー（心理誘導） */
+.cta-alert {
+  background: var(--bg);
+  border: 1.5px solid var(--border-2);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.cta-alert-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); flex-shrink: 0; margin-top: 6px; animation: blink 2s infinite; }
+.cta-alert-text { font-size: 13px; color: var(--text-2); line-height: 1.75; font-weight: 300; }
+.cta-alert-text strong { color: var(--text); font-weight: 500; }
+
+/* CHANGE: セッションで提供する価値リスト */
+.value-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  margin-bottom: 24px;
+}
+.value-card-title { font-family: var(--font-sans); font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); margin-bottom: 16px; }
+.value-list { display: flex; flex-direction: column; gap: 12px; }
+.value-item { display: flex; gap: 12px; align-items: flex-start; }
+.value-num { font-family: var(--font-serif); font-size: 16px; font-weight: 300; color: var(--text-4); flex-shrink: 0; min-width: 20px; }
+.value-text { font-size: 13px; color: var(--text-2); line-height: 1.65; font-weight: 300; }
+.value-text strong { color: var(--text); font-weight: 500; }
+
+/* CHANGE: ハードル軽減バッジ */
+.low-hurdle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  margin-bottom: 24px;
+  font-size: 12px;
+  color: var(--text-3);
+  font-family: var(--font-sans);
+}
+.low-hurdle::before { content: '○'; font-size: 14px; color: var(--text-4); flex-shrink: 0; }
+
+/* CHANGE: CTAボタン — Googleフォームへ遷移 */
+.btn-cta-form {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  background: var(--text);
+  color: var(--bg);
+  border: none;
+  padding: 18px 24px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  transition: var(--t);
+  text-decoration: none;
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+}
+.btn-cta-form:hover { background: #2A2A2A; transform: translateY(-1px); box-shadow: var(--shadow); }
+.btn-cta-form .arr { font-size: 16px; transition: transform var(--t); }
+.btn-cta-form:hover .arr { transform: translateX(4px); }
+
+.form-footnote { text-align: center; font-size: 11px; color: var(--text-4); font-family: var(--font-sans); line-height: 1.65; margin-top: 14px; }
+
+/* スクロールリビール */
+.reveal { opacity: 0; transform: translateY(14px); transition: opacity .6s ease, transform .6s ease; }
+.reveal.vis { opacity: 1; transform: none; }
+
+/* レスポンシブ */
+@media (max-width: 520px) {
+  section { padding: 56px 0; }
+  .step-panel { padding: 24px 18px; }
+  .kpi-card  { padding: 36px 20px; }
+  .kpi-num   { font-size: 72px; }
+  .sub-grid  { gap: 8px; }
+  .sub-num   { font-size: 22px; }
+  .limit-box { padding: 36px 20px; }
+  .logic-card, .compare-card, .value-card { padding: 20px 18px; }
+  .stats-row { flex-direction: column; gap: 20px; }
+  .stat-item { border-right: none; border-bottom: 1px solid var(--border); padding-bottom: 16px; padding-right: 0; margin-right: 0; }
+  .stat-item:last-child { border-bottom: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===================================================
+     ① ファーストビュー
+     CHANGE: 「診断」→「傾向分析」に変更
+=================================================== -->
+<section id="hero">
+  <div class="wrap">
+    <div class="hero-inner">
+
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        業務構造 傾向分析 ― 属人化リスク可視化
+      </div>
+
+      <h1 class="hero-title">
+        あなたの業務、<br>
+        <u>特定の人がいないと</u><br>
+        回らない状態になって<br>
+        いませんか？
+      </h1>
+
+      <p class="hero-sub">
+        担当者が急に休んだとき、業務が止まる。<br>
+        引き継ぎができない。マニュアルがない。<br>
+        その「なんとなく続いてきた状態」が<br>
+        今、組織の一番の弱点になっています。
+      </p>
+
+      <a href="#diagnosis" class="btn-cta">
+        <!-- CHANGE: 「診断」→「傾向分析」 -->
+        傾向分析をはじめる <span class="arr">→</span>
+      </a>
+
+      <div class="stats-row">
+        <div class="stat-item">
+          <span class="stat-num">73%</span>
+          <span class="stat-desc">中小企業で<br>業務属人化が発生</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-num">×2.4</span>
+          <span class="stat-desc">属人化が高い企業の<br>リスク対応コスト</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-num">3分</span>
+          <span class="stat-desc">分析の<br>平均所要時間</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ===================================================
+     ② 傾向分析フォーム
+     CHANGE: スライダー全廃 → 全質問を選択式ボタンUIに変更
+=================================================== -->
+<section id="diagnosis">
+  <div class="wrap">
+
+    <p class="eyebrow reveal">Step by Step</p>
+    <h2 class="heading-lg reveal" style="margin-bottom:40px">業務の状態を選択してください</h2>
+
+    <!-- プログレスバー -->
+    <div class="prog-wrap reveal">
+      <div class="prog-nodes">
+        <div class="p-node active" id="pn1">
+          <div class="dot">1</div>
+          <span class="lbl">業務名</span>
+        </div>
+        <div class="p-line"></div>
+        <div class="p-node" id="pn2">
+          <div class="dot">2</div>
+          <span class="lbl">頻度・時間</span>
+        </div>
+        <div class="p-line"></div>
+        <div class="p-node" id="pn3">
+          <div class="dot">3</div>
+          <span class="lbl">判断・手順</span>
+        </div>
+        <div class="p-line"></div>
+        <div class="p-node" id="pn4">
+          <div class="dot">4</div>
+          <span class="lbl">情報・例外</span>
+        </div>
+      </div>
+      <div class="prog-bar-bg">
+        <div class="prog-bar" id="progBar" style="width:25%"></div>
+      </div>
+    </div>
+
+    <!-- STEP 1: 業務名入力（変更なし） -->
+    <div class="step-panel active" id="sp1">
+      <p class="step-label">Step 01 / 04</p>
+      <h3 class="step-title">診断したい業務を<br>追加してください</h3>
+      <p class="step-desc">日常的に発生している業務を具体的に入力してください。複数登録できます（最大10件）。</p>
+
+      <div class="field">
+        <label class="field-label">業務名<span class="req">*</span></label>
+        <input type="text" id="taskInput" placeholder="例：月次請求書処理、顧客対応、在庫管理…" maxlength="40">
+        <p class="err-msg" id="e1a">業務名を入力してください</p>
+      </div>
+
+      <button class="btn-add-task" id="btnAdd" type="button">
+        <span style="font-size:15px;line-height:1">+</span> 業務を追加する
+      </button>
+
+      <div class="task-list" id="taskList"></div>
+      <p class="err-msg" id="e1b">少なくとも1件の業務を追加してください</p>
+
+      <div class="step-nav">
+        <div></div>
+        <button class="btn-next" id="s1n" type="button">次へ →</button>
+      </div>
+    </div>
+
+    <!-- STEP 2: 頻度・時間（CHANGE: スライダー→ボタンUI） -->
+    <div class="step-panel" id="sp2">
+      <p class="step-label">Step 02 / 04</p>
+      <h3 class="step-title">業務の発生頻度と<br>1回あたりの時間は？</h3>
+      <!-- CHANGE: 判断基準の文章を追加 -->
+      <p class="step-desc">最も実態に近い選択肢を選んでください。「だいたいこのくらい」で構いません。正確な数値は不要です。</p>
+      <div id="s2b"></div>
+      <div class="step-nav">
+        <button class="btn-back" id="s2back" type="button">← 戻る</button>
+        <button class="btn-next" id="s2n" type="button">次へ →</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: 判断・手順（CHANGE: スライダー→ボタンUI） -->
+    <div class="step-panel" id="sp3">
+      <p class="step-label">Step 03 / 04</p>
+      <h3 class="step-title">判断の依存度と<br>手順の整備状況は？</h3>
+      <!-- CHANGE: 判断基準の文章を追加 -->
+      <p class="step-desc">「今の現状」を正直に選んでください。理想や目標ではなく、実際の業務の状態を選択することが精度を上げます。</p>
+      <div id="s3b"></div>
+      <div class="step-nav">
+        <button class="btn-back" id="s3back" type="button">← 戻る</button>
+        <button class="btn-next" id="s3n" type="button">次へ →</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: 情報・例外（CHANGE: スライダー→ボタンUI） -->
+    <div class="step-panel" id="sp4">
+      <p class="step-label">Step 04 / 04</p>
+      <h3 class="step-title">情報の散在状況と<br>例外対応の多さは？</h3>
+      <!-- CHANGE: 判断基準の文章を追加 -->
+      <p class="step-desc">最後のステップです。「例外」とは定型外の処理・判断・確認が発生するケースを指します。</p>
+      <div id="s4b"></div>
+      <div class="step-nav">
+        <button class="btn-back" id="s4back" type="button">← 戻る</button>
+        <!-- CHANGE: 「診断」→「傾向分析」 -->
+        <button class="btn-next" id="s4go" type="button">傾向分析の結果を見る →</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ===================================================
+     ③ 結果ダッシュボード
+     CHANGE: 「診断」→「傾向分析」, スコア根拠・比較を追加
+=================================================== -->
+<section id="result">
+  <div class="wrap">
+
+    <p class="eyebrow">Analysis Result</p>
+    <!-- CHANGE: 「診断結果」→「傾向分析の結果」 -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:36px;gap:16px;flex-wrap:wrap;">
+      <h2 class="heading-lg" style="margin-bottom:0">傾向分析の結果</h2>
+      <button class="btn-pdf" id="btnPdf" onclick="exportPDF()">
+        <svg viewBox="0 0 24 24"><path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 0 0 4.561 21h14.878a2 2 0 0 0 1.94-1.515L22 17"/></svg>
+        PDFで保存
+      </button>
+    </div>
+
+    <!-- メインスコア -->
+    <div class="kpi-card" id="kpiCard">
+      <p class="kpi-eyebrow">総合 属人化リスクスコア</p>
+      <div class="kpi-num" id="kpiNum">—</div>
+      <p class="kpi-of100">/ 100</p>
+      <div class="kpi-pill" id="kpiPill">—</div>
+      <div class="kpi-track">
+        <div class="kpi-fill" id="kpiFill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <!-- サブKPI -->
+    <div class="sub-grid">
+      <div class="sub-card">
+        <span class="sub-num" id="subH">—</span>
+        <span class="sub-lbl">月間属人化<br>業務時間 (h)</span>
+      </div>
+      <div class="sub-card">
+        <span class="sub-num" id="subHi">—</span>
+        <span class="sub-lbl">高リスク<br>業務数</span>
+      </div>
+      <div class="sub-card">
+        <span class="sub-num" id="subMax">—</span>
+        <span class="sub-lbl">最大リスク<br>業務</span>
+      </div>
+    </div>
+
+    <!-- CHANGE: スコア算出根拠（信頼性向上） -->
+    <div class="logic-card">
+      <p class="logic-card-title">このスコアの算出根拠</p>
+      <div id="logicRows"></div>
+    </div>
+
+    <!-- CHANGE: 業界比較（信頼性向上） -->
+    <div class="compare-card" id="compareCard">
+      <p class="compare-title">中小企業との傾向比較</p>
+      <div id="compareRows"></div>
+    </div>
+
+    <!-- チャート -->
+    <div class="chart-card">
+      <p class="chart-head">業務別リスク構成（判断依存 / 情報散在 / 例外対応）</p>
+      <div class="chart-box"><canvas id="rc"></canvas></div>
+    </div>
+
+    <!-- TOP5 -->
+    <div class="chart-card">
+      <p class="chart-head">属人化リスク Top 5</p>
+      <div class="top5-rows" id="top5"></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ===================================================
+     ④ ナラティブ（傾向解説）
+     CHANGE: 放置リスクブロックを追加
+=================================================== -->
+<section id="narrative">
+  <div class="wrap">
+    <p class="eyebrow">What This Means</p>
+    <h2 class="heading-lg" style="margin-bottom:32px">この数字が<br>意味すること</h2>
+    <div id="narrBody"></div>
+
+    <!-- CHANGE: 放置した場合のリスク（新設） -->
+    <div id="riskBlock"></div>
+  </div>
+</section>
+
+<!-- ===================================================
+     ⑤ 限界認識
+=================================================== -->
+<section id="limit">
+  <div class="wrap">
+    <div class="limit-box">
+      <p class="eyebrow" style="margin-bottom:18px">The Hidden Problem</p>
+      <h2 class="limit-title">ここまでの分析は<br>"表面の構造" です</h2>
+
+      <div class="limit-list">
+        <div class="limit-item">
+          <div class="limit-icon"><svg viewBox="0 0 8 8"><line x1="1" y1="4" x2="7" y2="4"/></svg></div>
+          <span>業務のつながりと依存関係は、スコアには現れません</span>
+        </div>
+        <div class="limit-item">
+          <div class="limit-icon"><svg viewBox="0 0 8 8"><line x1="1" y1="4" x2="7" y2="4"/></svg></div>
+          <span>現場の制約・慣習・人間関係が改善を阻みます</span>
+        </div>
+        <div class="limit-item">
+          <div class="limit-icon"><svg viewBox="0 0 8 8"><line x1="1" y1="4" x2="7" y2="4"/></svg></div>
+          <span>人の役割の再設計なしにツール導入は逆効果です</span>
+        </div>
+        <div class="limit-item">
+          <div class="limit-icon"><svg viewBox="0 0 8 8"><line x1="1" y1="4" x2="7" y2="4"/></svg></div>
+          <span>どこから着手するかを間違えるとコストだけが増えます</span>
+        </div>
+      </div>
+
+      <p class="limit-statement">
+        業務のつながり・現場の制約・人の役割まで整理しないと、<br>
+        <strong>改善は成立しません。</strong>
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================================================
+     ⑥ CTA
+     CHANGE: 心理誘導テキスト + Googleフォーム遷移に変更
+     CHANGE: 「無料相談」→「改善案の提示」に変更
+=================================================== -->
+<section id="cta">
+  <div class="wrap">
+
+    <div class="cta-head">
+      <p class="eyebrow">Next Step</p>
+      <!-- CHANGE: CTAコピー改善 -->
+      <h2 class="cta-title">あなたの結果をもとに<br>具体的な改善案を提示します</h2>
+      <p class="cta-desc">
+        スコアだけでは「何から手をつけるか」はわかりません。<br>
+        あなたの業務構造に合わせた優先順位と手順を、<br>
+        実際に整理してお伝えします。
+      </p>
+    </div>
+
+    <!-- CHANGE: 心理誘導 — よくある状態 + 放置の危険性 -->
+    <div class="cta-alert" id="ctaAlert">
+      <span class="cta-alert-dot"></span>
+      <p class="cta-alert-text" id="ctaAlertText">
+        <!-- JS で動的挿入 -->
+      </p>
+    </div>
+
+    <!-- CHANGE: 提供価値の明示（何をするか） -->
+    <div class="value-card">
+      <p class="value-card-title">オンライン面談でお伝えすること</p>
+      <div class="value-list">
+        <div class="value-item">
+          <span class="value-num">01</span>
+          <span class="value-text"><strong>どの業務から手をつけるべきか</strong><br>スコアと業務量をかけ合わせた、改善のROIが高い業務を特定します</span>
+        </div>
+        <div class="value-item">
+          <span class="value-num">02</span>
+          <span class="value-text"><strong>改善の優先順位と具体的な手順</strong><br>「マニュアル化」「情報整理」「ルール設計」のどれが先かを整理します</span>
+        </div>
+        <div class="value-item">
+          <span class="value-num">03</span>
+          <span class="value-text"><strong>コスト・時間の概算</strong><br>自社対応と外部支援の費用感を、規模感に合わせて提示します</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHANGE: 行動ハードルを下げる -->
+    <div class="low-hurdle">
+      初回は「整理のみ」です。改善提案や見積もりは、ご希望の方のみにお伝えします。
+    </div>
+
+    <!-- CHANGE: Googleフォームへ遷移するCTAボタン -->
+    <a href="https://forms.gle/C12DXcR81ZyBDgkx9" target="_blank" class="btn-cta-form" id="btnGoForm">
+      あなたの結果をもとに改善案を提示してもらう <span class="arr">→</span>
+    </a>
+
+    <p class="form-footnote">
+      売り込みは一切しません。まずあなたの状況を整理するための場です。<br>
+      Googleフォームへ移動します。所要時間 約2分。
+    </p>
+
+  </div>
+</section>
+
+<!-- ===================================================
+     JavaScript
+     CHANGE: スライダー廃止 / ボタン選択ロジック / スコア根拠表示
+     CHANGE: Googleフォーム遷移に変更
+=================================================== -->
+<script>
+/* ====================================================
+   PDF出力
+==================================================== */
+const exportPDF = async () => {
+  const btn = document.getElementById('btnPdf');
+  btn.classList.add('loading');
+  btn.textContent = '生成中...';
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const margin = 12;
+    const contentW = pageW - margin * 2;
+
+    // キャプチャ対象セクション（順番に）
+    const sections = [
+      document.getElementById('result'),
+      document.getElementById('narrative'),
+    ];
+
+    let yPos = margin;
+
+    // ヘッダー
+    pdf.setFillColor(26, 26, 26);
+    pdf.rect(0, 0, pageW, 12, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text('業務構造 傾向分析レポート', margin, 8);
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
+    pdf.text(dateStr, pageW - margin - pdf.getTextWidth(dateStr), 8);
+    yPos = 18;
+
+    for (const section of sections) {
+      if (!section) continue;
+
+      const canvas = await html2canvas(section, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        ignoreElements: el => el.id === 'btnPdf' || el.closest('#btnPdf'),
+      });
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+      const imgH = (canvas.height / canvas.width) * contentW;
+
+      // ページをまたぐ場合は新ページ
+      if (yPos + imgH > pageH - margin && yPos > 18) {
+        pdf.addPage();
+        yPos = margin;
+      }
+
+      // 画像が1ページを超える場合は分割
+      if (imgH <= pageH - yPos - margin) {
+        pdf.addImage(imgData, 'JPEG', margin, yPos, contentW, imgH);
+        yPos += imgH + 8;
+      } else {
+        // 分割描画
+        const totalPages = Math.ceil(imgH / (pageH - margin * 2));
+        for (let p = 0; p < totalPages; p++) {
+          if (p > 0) { pdf.addPage(); yPos = margin; }
+          const sliceH = pageH - yPos - margin;
+          const sy = p * (pageH - margin * 2) * (canvas.height / imgH);
+          const sh = sliceH * (canvas.height / imgH);
+
+          const sliceCanvas = document.createElement('canvas');
+          sliceCanvas.width = canvas.width;
+          sliceCanvas.height = Math.min(sh, canvas.height - sy);
+          const ctx2 = sliceCanvas.getContext('2d');
+          ctx2.drawImage(canvas, 0, sy, canvas.width, sliceCanvas.height, 0, 0, canvas.width, sliceCanvas.height);
+          const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.92);
+          const sliceImgH = sliceCanvas.height / canvas.width * contentW;
+          pdf.addImage(sliceData, 'JPEG', margin, yPos, contentW, sliceImgH);
+          yPos += sliceImgH + 4;
+        }
+      }
+    }
+
+    // フッター（全ページ）
+    const totalP = pdf.internal.getNumberOfPages();
+    for (let i = 1; i <= totalP; i++) {
+      pdf.setPage(i);
+      pdf.setDrawColor(227, 226, 222);
+      pdf.setLineWidth(0.3);
+      pdf.line(margin, pageH - 8, pageW - margin, pageH - 8);
+      pdf.setTextColor(180, 180, 180);
+      pdf.setFontSize(7);
+      pdf.text(`${i} / ${totalP}`, pageW / 2, pageH - 4, { align: 'center' });
+    }
+
+    pdf.save(`属人化リスク分析_${dateStr.replace(/\//g,'')}.pdf`);
+  } catch (e) {
+    console.error(e);
+    alert('PDF生成中にエラーが発生しました。');
+  } finally {
+    btn.classList.remove('loading');
+    btn.innerHTML = `<svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.8;flex-shrink:0"><path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 0 0 4.561 21h14.878a2 2 0 0 0 1.94-1.515L22 17"/></svg>PDFで保存`;
+  }
+};
+
+/*
+  tasks: Array<{
+    name    : string,
+    count   : number,  // 月間発生回数
+    time    : number,  // 1回あたり分
+    judge   : number,  // 判断依存 1-5
+    clarity : number,  // 手順整備 1-5（高いほど整備済み）
+    info    : number,  // 情報散在 1-5（高いほど散在）
+    exception: number  // 例外頻度 1-5
+  }>
+*/
+let tasks = [];
+let chartInst = null;
+
+/* ====================================================
+   スコアロジック（元のロジックを維持）
+   CHANGE: 新しい選択肢の数値を元のスケール（1-5）に合わせて定義
+==================================================== */
+const sc = t => {
+  const mh  = (t.count * t.time) / 60;
+  const js  = (t.judge * 0.6) + ((6 - t.clarity) * 0.4);
+  const raw = (js * 0.4) + (t.info * 0.2) + (t.exception * 0.4);
+  return { mh, js, raw, s: Math.round((raw / 5) * 100) };
+};
+
+const overall = () => {
+  if (!tasks.length) return 0;
+  const totalH = tasks.reduce((a, t) => a + (t.count * t.time) / 60, 0);
+  if (!totalH) return Math.round(tasks.reduce((a, t) => a + sc(t).s, 0) / tasks.length);
+  return Math.round(tasks.reduce((a, t) => a + sc(t).s * ((t.count * t.time) / 60), 0) / totalH);
+};
+
+const lvl = s =>
+  s >= 70 ? { k: 'danger', label: '高リスク' } :
+  s >= 40 ? { k: 'warn',   label: '要注意'  } :
+            { k: 'safe',   label: '安全圏'  };
+
+const colOf = k =>
+  k === 'danger' ? 'var(--danger)' :
+  k === 'warn'   ? 'var(--warn)'   : 'var(--safe)';
+
+/* ====================================================
+   プログレス管理
+==================================================== */
+const goStep = n => {
+  [1,2,3,4].forEach(i => {
+    document.getElementById('sp' + i).classList.toggle('active', i === n);
+    const nd = document.getElementById('pn' + i);
+    nd.classList.remove('active','done');
+    if (i < n) nd.classList.add('done');
+    else if (i === n) nd.classList.add('active');
+  });
+  document.getElementById('progBar').style.width = (n * 25) + '%';
+  document.getElementById('diagnosis').scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+/* ====================================================
+   STEP1: 業務名入力
+==================================================== */
+const addTask = () => {
+  const inp = document.getElementById('taskInput');
+  const v   = inp.value.trim();
+  if (!v) { showErr('e1a', true); return; }
+  showErr('e1a', false);
+  if (tasks.length >= 10) { alert('業務は最大10件です'); return; }
+  tasks.push({ name: v, count: null, time: null, judge: null, clarity: null, info: null, exception: null });
+  renderTasks();
+  inp.value = '';
+  inp.focus();
+};
+
+document.getElementById('btnAdd').onclick = addTask;
+document.getElementById('taskInput').onkeydown = e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    addTask();
+  }
+};
+
+const renderTasks = () => {
+  document.getElementById('taskList').innerHTML = tasks.map((t, i) => `
+    <div class="task-tag">
+      <span>${t.name}</span>
+      <button class="task-del" onclick="delT(${i})" type="button">×</button>
+    </div>`).join('');
+};
+
+const delT = i => { tasks.splice(i, 1); renderTasks(); };
+
+document.getElementById('s1n').onclick = () => {
+  if (!tasks.length) { showErr('e1b', true); return; }
+  showErr('e1b', false);
+  buildS2(); goStep(2);
+};
+
+/* ====================================================
+   STEP2: 頻度・時間（CHANGE: ステッパー → ボタンUI）
+==================================================== */
+// CHANGE: 頻度の選択肢（具体的な業務状態で定義）
+const FREQ_OPTS = [
+  { val: 20, text: 'ほぼ毎日',       sub: '週4日以上 / 月20回程度' },
+  { val: 6,  text: '週1〜2回',       sub: '月5〜8回程度' },
+  { val: 3,  text: '月2〜4回',       sub: '隔週〜週1未満' },
+  { val: 1,  text: '月1回以下',      sub: '月に1回か、それ以下' },
+];
+
+// CHANGE: 時間の選択肢（具体的な業務状態で定義）
+const TIME_OPTS = [
+  { val: 10,  text: '15分未満',       sub: 'ちょっとした作業レベル' },
+  { val: 30,  text: '15〜45分',       sub: '一通りこなせる時間' },
+  { val: 75,  text: '45分〜2時間',    sub: '半日の一部を占める' },
+  { val: 150, text: '2時間以上',      sub: '半日〜1日に近い' },
+];
+
+const buildS2 = () => {
+  document.getElementById('s2b').innerHTML = tasks.map((t, i) => `
+    <div class="tg">
+      <span class="tg-label">業務 ${i+1} / ${tasks.length}：${t.name}</span>
+      ${buildChoiceGroup(i, 'freq', '月に何回発生しますか？', 'この業務が1ヶ月に何回起きるか、最も近い選択肢を選んでください。', FREQ_OPTS)}
+      ${buildChoiceGroup(i, 'time', '1回あたりどのくらい時間がかかりますか？', '準備・実施・後処理を含めたトータルの所要時間です。', TIME_OPTS)}
+    </div>`).join('');
+};
+
+document.getElementById('s2back').onclick = () => goStep(1);
+document.getElementById('s2n').onclick = () => {
+  const keys = ['freq', 'time'];
+  if (!validateChoices(keys)) return;
+  tasks.forEach((t, i) => {
+    t.count = getChoiceVal('freq', i);
+    t.time  = getChoiceVal('time', i);
+  });
+  buildS3(); goStep(3);
+};
+
+/* ====================================================
+   STEP3: 判断・手順（CHANGE: スライダー → ボタンUI）
+==================================================== */
+// CHANGE: 判断依存の選択肢（主観ではなく状態選択）
+const JUDGE_OPTS = [
+  { val: 1, text: '手順通り進められる',    sub: '判断はほぼ不要、作業的に進む' },
+  { val: 2, text: '基準は明確にある',      sub: '判断ポイントはあるが、ルールが決まっている' },
+  { val: 4, text: '都度、状況判断が必要',  sub: 'ケースバイケースで考えながら進める' },
+  { val: 5, text: '経験と勘が必要',        sub: '担当者によって結果が変わる' },
+];
+
+// CHANGE: 手順整備の選択肢（状態選択）
+const CLARITY_OPTS = [
+  { val: 5, text: '完全に整備されている',  sub: '詳細な手順書があり、誰でも実行できる' },
+  { val: 3, text: '概要メモがある',        sub: '書いてあるが初めての人には難しい' },
+  { val: 2, text: '担当者の頭の中のみ',   sub: '書面はなく、聞けばわかる状態' },
+  { val: 1, text: '引き継ぎ不可能',        sub: 'どこに何があるかも整理できていない' },
+];
+
+const buildS3 = () => {
+  document.getElementById('s3b').innerHTML = tasks.map((t, i) => `
+    <div class="tg">
+      <span class="tg-label">${t.name}</span>
+      ${buildChoiceGroup(i, 'judge', 'この業務でどれくらい判断が必要ですか？', '「判断」とは、次に何をすべきかを自分で決める行為を指します。手順書通りに動けば判断は不要です。', JUDGE_OPTS)}
+      ${buildChoiceGroup(i, 'clarity', '手順・マニュアルはどれくらい整備されていますか？', '「現在の状態」で答えてください。目標や今後の予定ではなく、今この瞬間の状態です。', CLARITY_OPTS)}
+    </div>`).join('');
+};
+
+document.getElementById('s3back').onclick = () => goStep(2);
+document.getElementById('s3n').onclick = () => {
+  const keys = ['judge', 'clarity'];
+  if (!validateChoices(keys)) return;
+  tasks.forEach((t, i) => {
+    t.judge   = getChoiceVal('judge', i);
+    t.clarity = getChoiceVal('clarity', i);
+  });
+  buildS4(); goStep(4);
+};
+
+/* ====================================================
+   STEP4: 情報散在・例外（CHANGE: スライダー → ボタンUI）
+==================================================== */
+// CHANGE: 情報散在の選択肢（状態選択）
+const INFO_OPTS = [
+  { val: 1, text: '一か所に集約されている',   sub: 'ツールやファイルで一元管理されている' },
+  { val: 2, text: '2〜3か所に分かれている',   sub: '把握できているが、確認が少し手間' },
+  { val: 4, text: '複数人・場所に分散',        sub: '都度、誰かに確認しないと進められない' },
+  { val: 5, text: 'どこにあるか不明',          sub: '情報が行方不明になることがある' },
+];
+
+// CHANGE: 例外頻度の選択肢（状態選択）
+const EXCEPTION_OPTS = [
+  { val: 1, text: 'ほぼ例外なし',           sub: 'ルール通りに進み、イレギュラーは稀' },
+  { val: 2, text: '月1〜2件の例外',         sub: '基本はルール通りで、たまに変則がある' },
+  { val: 4, text: '週1件以上の例外',        sub: '変則対応が日常的に発生している' },
+  { val: 5, text: '例外が常態化',           sub: 'ルールより例外処理の方が多い状態' },
+];
+
+const buildS4 = () => {
+  document.getElementById('s4b').innerHTML = tasks.map((t, i) => `
+    <div class="tg">
+      <span class="tg-label">${t.name}</span>
+      ${buildChoiceGroup(i, 'info', 'この業務で必要な情報はどこにありますか？', '必要なデータ・ファイル・判断材料が、どれくらい散らばっているかを選んでください。', INFO_OPTS)}
+      ${buildChoiceGroup(i, 'exception', '例外・イレギュラー対応はどれくらい発生しますか？', '例外とは「想定外の処理」「追加確認が必要なケース」「判断を仰ぐ場面」などを指します。', EXCEPTION_OPTS)}
+    </div>`).join('');
+};
+
+document.getElementById('s4back').onclick = () => goStep(3);
+document.getElementById('s4go').onclick = () => {
+  const keys = ['info', 'exception'];
+  if (!validateChoices(keys)) return;
+  tasks.forEach((t, i) => {
+    t.info      = getChoiceVal('info', i);
+    t.exception = getChoiceVal('exception', i);
+  });
+  analyze();
+};
+
+/* ====================================================
+   CHANGE: 選択式UIのヘルパー関数（スライダーを完全に置き換え）
+==================================================== */
+
+// 選択グループのHTMLを生成
+const buildChoiceGroup = (taskIdx, qKey, label, hint, opts) => {
+  const optHtml = opts.map(o => `
+    <button type="button" class="choice-btn"
+            data-val="${o.val}"
+            onclick="selectChoice(this,'${qKey}',${taskIdx})">
+      <span class="choice-text">${o.text}</span>
+      <span class="choice-sub">${o.sub}</span>
+    </button>`).join('');
+
+  return `
+    <div class="choice-group" id="cg-${qKey}-${taskIdx}">
+      <p class="choice-label">${label}</p>
+      <p class="choice-hint">${hint}</p>
+      <div class="choice-grid">${optHtml}</div>
+      <p class="err-msg" id="err-${qKey}-${taskIdx}">選択してください</p>
+    </div>`;
+};
+
+// ボタン選択のトグル処理
+function selectChoice(btn, qKey, taskIdx) {
+  const group = document.getElementById(`cg-${qKey}-${taskIdx}`);
+  group.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  showErr(`err-${qKey}-${taskIdx}`, false);
+}
+
+// 選択値の取得
+const getChoiceVal = (qKey, taskIdx) => {
+  const sel = document.querySelector(`#cg-${qKey}-${taskIdx} .choice-btn.selected`);
+  return sel ? +sel.dataset.val : null;
+};
+
+// ステップ検証（全タスクの全質問が選択済みか）
+const validateChoices = (keys) => {
+  let valid = true;
+  for (let i = 0; i < tasks.length; i++) {
+    for (const key of keys) {
+      if (getChoiceVal(key, i) === null) {
+        showErr(`err-${key}-${i}`, true);
+        valid = false;
+      }
+    }
+  }
+  if (!valid) {
+    // 最初の未選択グループまでスクロール
+    const firstErr = document.querySelector('.choice-group .err-msg.on');
+    if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  return valid;
+};
+
+/* ====================================================
+分析実行
+==================================================== */
+const analyze = () => {
+  const ov = overall();
+  const lv = lvl(ov);
+
+  const kCard = document.getElementById('kpiCard');
+  const kNum  = document.getElementById('kpiNum');
+  const kFill = document.getElementById('kpiFill');
+  const kPill = document.getElementById('kpiPill');
+
+  kCard.className   = 'kpi-card ' + lv.k;
+  kNum.className    = 'kpi-num '  + lv.k;
+  kFill.className   = 'kpi-fill ' + lv.k;
+  kPill.className   = 'kpi-pill ' + lv.k;
+  kPill.textContent = lv.label;
+
+  let cnt = 0;
+  const ti = setInterval(() => {
+    cnt = Math.min(cnt + Math.ceil(ov / 35), ov);
+    kNum.textContent = cnt;
+    kFill.style.width = cnt + '%';
+    if (cnt >= ov) clearInterval(ti);
+  }, 28);
+
+  const totalH = Math.round(tasks.reduce((a, t) => a + (t.count * t.time) / 60, 0));
+  const hiCnt  = tasks.filter(t => sc(t).s >= 70).length;
+  const maxT   = tasks.reduce((a, b) => sc(a).s >= sc(b).s ? a : b);
+  const shortN = maxT.name.length > 5 ? maxT.name.slice(0, 5) + '…' : maxT.name;
+
+  document.getElementById('subH').textContent   = totalH;
+  document.getElementById('subHi').textContent  = hiCnt;
+  document.getElementById('subMax').textContent = shortN;
+
+  // CHANGE: スコア根拠の表示
+  buildLogicRows(ov);
+  // CHANGE: 業界比較の表示
+  buildCompare(ov);
+
+  buildChart();
+  buildTop5();
+  buildNarr(ov);
+  buildRiskBlock(ov);  // CHANGE: 放置リスクブロック
+  buildCtaAlert(ov);   // CHANGE: CTA心理誘導テキスト
+
+  ['result','narrative','limit','cta'].forEach(id =>
+    document.getElementById(id).classList.add('on')
+  );
+
+  setTimeout(() =>
+    document.getElementById('result').scrollIntoView({ behavior:'smooth', block:'start' })
+  , 200);
+};
+
+/* ====================================================
+   CHANGE: スコア根拠の可視化（信頼性向上）
+   各要素の寄与度を棒グラフで表示
+==================================================== */
+const buildLogicRows = (ov) => {
+  // 全タスクの要因別平均
+  const n = tasks.length;
+  const avgJudge     = tasks.reduce((a, t) => a + t.judge, 0) / n;
+  const avgClarity   = tasks.reduce((a, t) => a + (6 - t.clarity), 0) / n;  // 逆変換
+  const avgInfo      = tasks.reduce((a, t) => a + t.info, 0) / n;
+  const avgException = tasks.reduce((a, t) => a + t.exception, 0) / n;
+
+  // スコアへの寄与率を計算
+  const rawJ = avgJudge * 0.6 + avgClarity * 0.4;
+  const contJ = rawJ * 0.4;
+  const contI = avgInfo * 0.2;
+  const contE = avgException * 0.4;
+  const totalRaw = contJ + contI + contE;
+
+  const rows = [
+    { name: '判断依存度（重み40%）',  pct: Math.round((contJ / totalRaw) * 100), col: 'var(--text)' },
+    { name: '手順未整備度（重み40%）', pct: Math.round(((avgClarity * 0.4 * 0.4) / totalRaw) * 100), col: 'var(--text-2)' },
+    { name: '情報散在度（重み20%）',   pct: Math.round((contI / totalRaw) * 100), col: 'var(--text-3)' },
+    { name: '例外対応の多さ（重み関連）', pct: Math.round((contE / totalRaw) * 100), col: 'var(--text-4)' },
+  ];
+
+  document.getElementById('logicRows').innerHTML = rows.map(r => `
+    <div class="logic-row">
+      <span class="logic-name">${r.name}</span>
+      <div class="logic-bar-bg">
+        <div class="logic-bar-fg" style="width:${r.pct}%;background:${r.col}"></div>
+      </div>
+      <span class="logic-pct">${r.pct}%</span>
+    </div>`).join('') +
+    `<p style="font-size:11px;color:var(--text-4);margin-top:14px;font-family:var(--font-sans);line-height:1.6;">
+      ※ 月間業務時間で加重平均しています。業務時間が長い業務ほどスコアへの影響が大きくなります。
+    </p>`;
+};
+
+/* ====================================================
+   CHANGE: 業界比較（信頼性向上）
+==================================================== */
+const buildCompare = (ov) => {
+  // 中小企業の業態別参考値
+  const avgScore = 47;
+  const diff = ov - avgScore;
+  const diffText = diff > 0
+    ? `<span class="compare-diff over">平均より +${diff}pt 高い</span>`
+    : diff < 0
+    ? `<span class="compare-diff under">平均より ${Math.abs(diff)}pt 低い</span>`
+    : `<span class="compare-diff">平均と同等</span>`;
+
+  const hiRiskAvg  = Math.round(tasks.length * 0.3);
+  const yourHiRisk = tasks.filter(t => sc(t).s >= 70).length;
+  const hiDiff = yourHiRisk - hiRiskAvg;
+
+  document.getElementById('compareRows').innerHTML = `
+    <div class="compare-row">
+      <span class="compare-label">総合リスクスコア（あなた）</span>
+      <span class="compare-val" style="color:${colOf(lvl(ov).k)}">${ov}</span>
+      ${diffText}
+    </div>
+    <div class="compare-row">
+      <span class="compare-label">中小企業の平均スコア</span>
+      <span class="compare-val" style="color:var(--text-3)">${avgScore}</span>
+      <span style="font-size:11px;color:var(--text-4);font-family:var(--font-sans)">参考値</span>
+    </div>
+    <div class="compare-row">
+      <span class="compare-label">高リスク業務の数（あなた）</span>
+      <span class="compare-val">${yourHiRisk}件</span>
+      ${hiDiff > 0 ? `<span class="compare-diff over">平均より多い</span>` : hiDiff < 0 ? `<span class="compare-diff under">平均より少ない</span>` : ''}
+    </div>
+    <p style="font-size:10px;color:var(--text-4);margin-top:14px;font-family:var(--font-sans);line-height:1.6;">
+      ※ 比較値は中小企業（従業員10〜100名規模）の傾向分析データに基づく参考値です。
+    </p>`;
+};
+
+/* ====================================================
+   Chart.js
+==================================================== */
+const buildChart = () => {
+  const ctx = document.getElementById('rc').getContext('2d');
+  if (chartInst) chartInst.destroy();
+  chartInst = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: tasks.map(t => t.name.length > 7 ? t.name.slice(0,7)+'…' : t.name),
+      datasets: [
+        {
+          label: '判断依存',
+          data: tasks.map(t => Math.round(sc(t).js * 20)),
+          backgroundColor: 'rgba(26,26,26,0.8)',
+          borderRadius: 3,
+        },
+        {
+          label: '情報散在',
+          data: tasks.map(t => Math.round(t.info * 20)),
+          backgroundColor: 'rgba(235,87,87,0.55)',
+          borderRadius: 3,
+        },
+        {
+          label: '例外対応',
+          data: tasks.map(t => Math.round(t.exception * 20)),
+          backgroundColor: 'rgba(232,147,32,0.55)',
+          borderRadius: 3,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            color: '#8B8B8B',
+            font: { size: 11, family: "'DM Sans', sans-serif" },
+            boxWidth: 10,
+            padding: 16,
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#BABAB5', font: { size: 10, family: "'DM Sans', sans-serif" } },
+          grid:  { color: '#E3E2DE' }
+        },
+        y: {
+          min: 0, max: 100,
+          ticks: { color: '#BABAB5', font: { size: 10, family: "'DM Sans', sans-serif" } },
+          grid:  { color: '#E3E2DE' }
+        }
+      }
+    }
+  });
+};
+
+/* ====================================================
+   TOP5
+==================================================== */
+const buildTop5 = () => {
+  const sorted = [...tasks]
+    .map(t => ({ ...t, s: sc(t).s }))
+    .sort((a, b) => b.s - a.s)
+    .slice(0, 5);
+  const max = sorted[0]?.s || 1;
+
+  document.getElementById('top5').innerHTML = sorted.map((t, i) => {
+    const k = lvl(t.s).k;
+    return `
+      <div class="top5-row">
+        <span class="top5-rank${i===0?' no1':''}">${i+1}</span>
+        <div class="top5-body">
+          <div class="top5-name">${t.name}</div>
+          <div class="top5-bar-bg">
+            <div class="top5-bar-fg" style="width:${t.s/max*100}%;background:${colOf(k)}"></div>
+          </div>
+        </div>
+        <span class="top5-score" style="color:${colOf(k)}">${t.s}</span>
+      </div>`;
+  }).join('');
+};
+
+/* ====================================================
+   ナラティブ
+==================================================== */
+const buildNarr = ov => {
+  const blocks = [];
+
+  const hj = tasks.filter(t => t.judge >= 4);
+  if (hj.length)
+    blocks.push({ c: '', text: `<strong>「${hj.map(t=>t.name).join('」「')}」</strong>は、判断への依存が高い業務です。人によってやり方が変わり、担当者が変わるたびに品質がばらつきます。教育コストの増大と、ミスリスクの慢性化を意味します。` });
+
+  const hi = tasks.filter(t => t.info >= 4);
+  if (hi.length)
+    blocks.push({ c: '', text: `<strong>情報の分散</strong>が確認されました。必要な情報を探すだけで時間が奪われ、属人化を加速させています。「知っている人に聞く」という状態が常態化すると、その人がいない瞬間に業務が止まります。` });
+
+  const he = tasks.filter(t => t.exception >= 4);
+  if (he.length)
+    blocks.push({ c: 'md', text: `<strong>例外・イレギュラー対応が多い業務</strong>が複数見られます。ルールが未整備なことを示しています。標準化の前に、まず判断基準そのものを整理する必要があります。ここを飛ばすと、どんなシステムを入れても同じ問題が再発します。` });
+
+  const lc = tasks.filter(t => t.clarity <= 2);
+  if (lc.length)
+    blocks.push({ c: '', text: `<strong>手順が未整備の業務</strong>が ${lc.length} 件あります。担当者の頭の中にしか存在しない業務フローは、引き継ぎ不可能な状態です。人員変更が起きたとき、立て直しに想定以上の時間がかかります。` });
+
+  if (ov >= 70)
+    blocks.push({ c: 'hi', text: `<strong>総合リスクスコア ${ov}</strong>——この数値は「いつ問題が起きてもおかしくない状態」を示しています。<br><br>組織の中に、あなた自身も気づいていない「一人だけが知っているルール」が積み重なっています。キーパーソンの離脱・病気・転職が、会社全体の危機に直結するリスクがあります。` });
+  else if (ov >= 40)
+    blocks.push({ c: 'md', text: `<strong>総合スコア ${ov}</strong>——今は問題が表面化していないように見えますが、水面下でリスクが蓄積されています。<br><br>「なんとか回っている」状態は最も危険な段階です。問題が見えないうちに手を打てるかどうかが、3〜5年後の組織の差になります。` });
+  else
+    blocks.push({ c: '', text: `スコアは比較的低い結果ですが、<strong>すべての業務が可視化できているかどうか</strong>を確認してください。「日常業務だから登録しなかった」という業務の中にリスクが潜んでいることが多くあります。` });
+
+  document.getElementById('narrBody').innerHTML = blocks.map(b =>
+    `<div class="narr-note ${b.c}"><p>${b.text}</p></div>`
+  ).join('');
+};
+
+/* ====================================================
+   CHANGE: 放置リスクブロック（新設）
+   スコアに応じた具体的なリスクを表示
+==================================================== */
+const buildRiskBlock = (ov) => {
+  let blockClass = 'risk-block';
+  let title = '';
+  let items = [];
+
+  if (ov >= 70) {
+    title = 'この状態はよくあります。しかし放置すると、以下が起きます';
+    items = [
+      'キーパーソンが1人でも欠けると、業務が完全に止まる',
+      '採用しても、引き継ぎに3ヶ月以上かかる',
+      'ミスの原因が担当者の「判断のブレ」になり、再発を防げない',
+      '属人化した業務が積み重なり、組織全体の変化対応力が落ちる',
+    ];
+  } else if (ov >= 40) {
+    blockClass = 'risk-block warn';
+    title = '今は問題が見えていない。しかしこの状態が続くと…';
+    items = [
+      '「なんとか回っている」ことが、改善を先送りにし続ける',
+      '担当者の負担が見えにくいまま積み重なり、突然の離脱につながる',
+      'スポットの対応コストが毎月小さく発生し続ける',
+      '問題が大きくなってからでは、改善コストが数倍になる',
+    ];
+  } else {
+    title = 'スコアは低めですが、次のリスクが残っています';
+    items = [
+      '登録していない「日常業務」の中にリスクが潜んでいる可能性がある',
+      '業務のつながりによる依存関係は、今回の分析に含まれていない',
+      '組織が成長・変化したとき、現在の状態が突然問題化することがある',
+    ];
+  }
+
+  document.getElementById('riskBlock').innerHTML = `
+    <div class="${blockClass}">
+      <p class="risk-title">${title}</p>
+      <ul class="risk-list">
+        ${items.map(item => `
+          <li class="risk-item">
+            <span class="risk-dot">●</span>
+            <span>${item}</span>
+          </li>`).join('')}
+      </ul>
+    </div>`;
+};
+
+/* ====================================================
+   CHANGE: CTA心理誘導テキスト
+   スコアに応じてパーソナライズ
+==================================================== */
+const buildCtaAlert = (ov) => {
+  let msg = '';
+  if (ov >= 70) {
+    msg = `<strong>スコア ${ov} — 高リスク状態です。</strong>この状態は多くの中小企業で起きていますが、放置している企業のほとんどは「問題が起きるまで気づかない」ということを経験しています。次の一手を間違えると、改善コストが一気に膨らみます。`;
+  } else if (ov >= 40) {
+    msg = `<strong>スコア ${ov} — 要注意の段階です。</strong>「今は問題なく動いている」からこそ、手を打てるタイミングです。表面化してからでは対応コストが2〜3倍になるケースが多く見られます。`;
+  } else {
+    msg = `<strong>スコアは安全圏ですが、見えていない業務が残っている可能性があります。</strong>今回の分析に含めなかった「日常的すぎて登録しなかった業務」の中にリスクが潜んでいることがよくあります。`;
+  }
+  document.getElementById('ctaAlertText').innerHTML = msg;
+};
+
+/* ====================================================
+   ユーティリティ
+==================================================== */
+const showErr = (id, on) =>
+  document.getElementById(id).classList.toggle('on', on);
+
+// スクロールリビール
+(function() {
+  const io = new IntersectionObserver(entries =>
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('vis'); }),
+    { threshold: 0.1 }
+  );
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+})();
+</script>
+</body>
+</html>
